@@ -1,21 +1,37 @@
 /**
- * Module Dependencies
+ * MIT License
+ *
+ * Copyright (c) 2017 Mike McNeil, Balderdash Design Co., & The Sails Company
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
-// ...
-// e.g.
-// var _ = require('lodash');
-// var mysql = require('node-mysql');
-// ...
+
 
 /**
  * Sails Boilerplate Adapter
  *
  * Most of the methods below are optional.
- * 
+ *
  * If you don't need / can't get to every method, just implement
  * what you have time for.  The other methods will only fail if
  * you try to call them!
- * 
+ *
  * For many adapters, this file is all you need.  For very complex adapters, you may need more flexiblity.
  * In any case, it's probably a good idea to start with one file and refactor only if necessary.
  * If you do go that route, it's conventional in Node to create a `./lib` directory for your private submodules
@@ -23,25 +39,21 @@
  */
 var Adapter = function Adapter() {
 
-  // You'll want to maintain a reference to each collection
-  // (aka model) that gets registered with this adapter.
-  var _modelReferences = {};
-  
   // You may also want to store additional, private data
   // per-collection (esp. if your data store uses persistent
   // connections).
   //
   // Keep in mind that models can be configured to use different databases
   // within the same app, at the same time.
-  // 
+  //
   // i.e. if you're writing a MariaDB adapter, you should be aware that one
   // model might be configured as `host="localhost"` and another might be using
-  // `host="foo.com"` at the same time.  Same thing goes for user, database, 
+  // `host="foo.com"` at the same time.  Same thing goes for user, database,
   // password, or any other config.
   //
   // You don't have to support this feature right off the bat in your
   // adapter, but it ought to get done eventually.
-  // 
+  //
   // Sounds annoying to deal with...
   // ...but it's not bad.  In each method, acquire a connection using the config
   // for the current model (looking it up from `_modelReferences`), establish
@@ -49,16 +61,15 @@ var Adapter = function Adapter() {
   // Finally, as an optimization, you might use a db pool for each distinct
   // connection configuration, partioning pools for each separate configuration
   // for your adapter (i.e. worst case scenario is a pool for each model, best case
-  // scenario is one single single pool.)  For many databases, any change to 
+  // scenario is one single single pool.)  For many databases, any change to
   // host OR database OR user OR password = separate pool.
   var _dbPools = {};
 
-  var adapter = {
+  // You'll want to maintain a reference to each collection
+  // (aka model) that gets registered with this adapter.
+  var _modelReferences = {};
 
-    // Set to true if this adapter supports (or requires) things like data types, validations, keys, etc.
-    // If true, the schema for models using this adapter will be automatically synced when the server starts.
-    // Not terribly relevant if your data store is not SQL/schemaful.
-    syncable: false,
+  var adapter = {
 
     // Default configuration for collections
     // (same effect as if these properties were included at the top level of the model definitions)
@@ -71,11 +82,11 @@ var Adapter = function Adapter() {
       // ssl: false,
       // customThings: ['eh']
 
-      // If setting syncable, you should consider the migrate option, 
+      // If setting syncable, you should consider the migrate option,
       // which allows you to set how the sync will be performed.
       // It can be overridden globally in an app (config/adapters.js)
       // and on a per-model basis.
-      // 
+      //
       // IMPORTANT:
       // `migrate` is not a production data migration solution!
       // In production, always use `migrate: safe`
@@ -86,128 +97,62 @@ var Adapter = function Adapter() {
       migrate: 'alter'
     },
 
-    /**
-     * REQUIRED method if integrating with a schemaful
-     * (SQL-ish) database.
-     * 
-     * @param  {[type]}   collectionName [description]
-     * @param  {[type]}   definition     [description]
-     * @param  {Function} cb             [description]
-     * @return {[type]}                  [description]
-     */
-    define: function(collectionName, definition, cb) {
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
-
-      // Define a new "table" or "collection" schema in the data store
-      cb();
-    },
-
-    /**
-     * REQUIRED method if integrating with a schemaful
-     * (SQL-ish) database.
-     * 
-     * @param  {[type]}   collectionName [description]
-     * @param  {Function} cb             [description]
-     * @return {[type]}                  [description]
-     */
-    describe: function(collectionName, cb) {
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
-
-      // Respond with the schema (attributes) for a collection or table in the data store
-      var attributes = {};
-      cb(null, attributes);
-    },
-
-    /**
-     *
-     *
-     * REQUIRED method if integrating with a schemaful
-     * (SQL-ish) database.
-     *
-     * @param  {[type]}   collectionName [description]
-     * @param  {[type]}   relations      [description]
-     * @param  {Function} cb             [description]
-     * @return {[type]}                  [description]
-     */
-    drop: function(collectionName, relations, cb) {
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
-
-      // Drop a "table" or "collection" schema from the data store
-      cb();
-    },
+    // Set to true if this adapter supports (or requires) things like data types, validations, keys, etc.
+    // If true, the schema for models using this adapter will be automatically synced when the server starts.
+    // Not terribly relevant if your data store is not SQL/schemaful.
+    syncable: false,
 
     /**
      *
      * REQUIRED method if users expect to call Model.create() or any methods
      *
-     * @param  {[type]}   collectionName [description]
-     * @param  {[type]}   values         [description]
-     * @param  {Function} cb             [description]
-     * @return {[type]}                  [description]
+     * @param  {String}   collection [description]
+     * @param  {[type]}   values     [description]
+     * @param  {Function} cb         [description]
+     * @return {[type]}              [description]
      */
-    create: function(collectionName, values, cb) {
+    create: function(collection, values, cb) {
       // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+      var records = _modelReferences[collection];
 
       // Create a single new model (specified by `values`)
 
       // Respond with error or the newly-created record.
       cb(null, values);
     },
- 
-    /**
-     * REQUIRED method if users expect to call Model.destroy()
-     *
-     * @param  {[type]}   collectionName [description]
-     * @param  {[type]}   options        [description]
-     * @param  {Function} cb             [description]
-     * @return {[type]}                  [description]
-     */
-    destroy: function(collectionName, options, cb) {
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
 
-
-      // 1. Filter, paginate, and sort records from the datastore.
-      //    You should end up w/ an array of objects as a result.
-      //    If no matches were found, this will be an empty array.
-      //    
-      // 2. Destroy all result records.
-      // 
-      // (do both in a single query if you can-- it's faster)
-
-      // Return an error, otherwise it's declared a success.
+    // Optional override of built-in batch create logic for increased efficiency
+    // (since most databases include optimizations for pooled queries, at least intra-connection)
+    // otherwise, Waterline core uses create()
+    createEach: function createEach(collection, arrayOfObjects, cb) {
       cb();
     },
 
     /**
      * REQUIRED method if users expect to call Model.find(), Model.findOne(),
      * or related.
-     * 
+     *
      * You should implement this method to respond with an array of instances.
      * Waterline core will take care of supporting all the other different
      * find methods/usages.
-     * 
-     * @param  {[type]}   collectionName [description]
-     * @param  {[type]}   options        [description]
-     * @param  {Function} cb             [description]
-     * @return {[type]}                  [description]
+     *
+     * @param  {String}   collection [description]
+     * @param  {[type]}   options    [description]
+     * @param  {Function} cb         [description]
+     * @return {[type]}              [description]
      */
-    find: function(collectionName, options, cb) {
+    find: function(collection, options, cb) {
 
       // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+      var records = _modelReferences[collection];
 
       // Options object is normalized for you:
-      // 
+      //
       // options.where
       // options.limit
       // options.skip
       // options.sort
-      
+
       // Filter, paginate, and sort records from the datastore.
       // You should end up w/ an array of objects as a result.
       // If no matches were found, this will be an empty array.
@@ -217,17 +162,94 @@ var Adapter = function Adapter() {
     },
 
     /**
+     * REQUIRED method if integrating with a schemaful
+     * (SQL-ish) database.
+     *
+     * @param  {String}   collection [description]
+     * @param  {[type]}   definition [description]
+     * @param  {Function} cb         [description]
+     * @return {[type]}              [description]
+     */
+    define: function(collection, definition, cb) {
+      // If you need to access your private data for this collection:
+      var records = _modelReferences[collection];
+
+      // Define a new "table" or "collection" schema in the data store
+      cb();
+    },
+
+    /**
+     * REQUIRED method if integrating with a schemaful
+     * (SQL-ish) database.
+     *
+     * @param  {String}   collection [description]
+     * @param  {Function} cb         [description]
+     * @return {[type]}              [description]
+     */
+    describe: function(collection, cb) {
+      // If you need to access your private data for this collection:
+      var records = _modelReferences[collection];
+
+      // Respond with the schema (attributes) for a collection or table in the data store
+      var attributes = {};
+      cb(null, attributes);
+    },
+
+    /**
+     * REQUIRED method if users expect to call Model.destroy()
+     *
+     * @param  {String}   collection [description]
+     * @param  {[type]}   options    [description]
+     * @param  {Function} cb         [description]
+     * @return {[type]}              [description]
+     */
+    destroy: function(collection, options, cb) {
+      // If you need to access your private data for this collection:
+      var records = _modelReferences[collection];
+
+      // 1. Filter, paginate, and sort records from the datastore.
+      //    You should end up w/ an array of objects as a result.
+      //    If no matches were found, this will be an empty array.
+      //
+      // 2. Destroy all result records.
+      //
+      // (do both in a single query if you can-- it's faster)
+
+      // Return an error, otherwise it's declared a success.
+      cb();
+    },
+
+    /**
+     *
+     *
+     * REQUIRED method if integrating with a schemaful
+     * (SQL-ish) database.
+     *
+     * @param  {String}   collection [description]
+     * @param  {[type]}   relations  [description]
+     * @param  {Function} cb         [description]
+     * @return {[type]}              [description]
+     */
+    drop: function(collection, relations, cb) {
+      // If you need to access your private data for this collection:
+      var records = _modelReferences[collection];
+
+      // Drop a "table" or "collection" schema from the data store
+      cb();
+    },
+
+    /**
      * This method runs when a model is initially registered
      * at server-start-time.  This is the only required method.
-     * 
-     * @param  {[type]}   collection [description]
+     *
+     * @param  {String}   collection [description]
      * @param  {Function} cb         [description]
      * @return {[type]}              [description]
      */
     registerCollection: function(collection, cb) {
       // Keep a reference to this collection
       _modelReferences[collection.identity] = collection;
-      
+
       cb();
     },
 
@@ -235,7 +257,7 @@ var Adapter = function Adapter() {
      * Fired when a model is unregistered, typically when the server
      * is killed. Useful for tearing-down remaining open connections,
      * etc.
-     * 
+     *
      * @param  {Function} cb [description]
      * @return {[type]}      [description]
      */
@@ -243,26 +265,25 @@ var Adapter = function Adapter() {
       cb();
     },
 
-    /** 
+    /**
      * REQUIRED method if users expect to call Model.update()
      *
-     * @param  {[type]}   collectionName [description]
-     * @param  {[type]}   options        [description]
-     * @param  {[type]}   values         [description]
-     * @param  {Function} cb             [description]
-     * @return {[type]}                  [description]
+     * @param  {String}   collection [description]
+     * @param  {[type]}   options    [description]
+     * @param  {[type]}   values     [description]
+     * @param  {Function} cb         [description]
+     * @return {[type]}              [description]
      */
-    update: function(collectionName, options, values, cb) {
-
+    update: function(collection, options, values, cb) {
       // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+      var records = _modelReferences[collection];
 
       // 1. Filter, paginate, and sort records from the datastore.
       //    You should end up w/ an array of objects as a result.
       //    If no matches were found, this will be an empty array.
-      //    
+      //
       // 2. Update all result records with `values`.
-      // 
+      //
       // (do both in a single query if you can-- it's faster)
 
       // Respond with error or an array of updated records.
@@ -270,11 +291,11 @@ var Adapter = function Adapter() {
     },
 
     // OVERRIDES NOT CURRENTLY FULLY SUPPORTED FOR:
-    // 
-    // alter: function (collectionName, changes, cb) {},
-    // addAttribute: function(collectionName, attrName, attrDef, cb) {},
-    // removeAttribute: function(collectionName, attrName, attrDef, cb) {},
-    // alterAttribute: function(collectionName, attrName, attrDef, cb) {},
+    //
+    // alter: function (collection, changes, cb) {},
+    // addAttribute: function(collection, attrName, attrDef, cb) {},
+    // removeAttribute: function(collection, attrName, attrDef, cb) {},
+    // alterAttribute: function(collection, attrName, attrDef, cb) {},
     // addIndex: function(indexName, options, cb) {},
     // removeIndex: function(indexName, options, cb) {},
 
@@ -283,17 +304,11 @@ var Adapter = function Adapter() {
     * Optional overrides
     **********************************************
 
-    // Optional override of built-in batch create logic for increased efficiency
-    // (since most databases include optimizations for pooled queries, at least intra-connection)
-    // otherwise, Waterline core uses create()
-    createEach: function (collectionName, arrayOfObjects, cb) { cb(); },
-
     // Optional override of built-in findOrCreate logic for increased efficiency
     // (since most databases include optimizations for pooled queries, at least intra-connection)
     // otherwise, uses find() and create()
-    findOrCreate: function (collectionName, arrayOfAttributeNamesWeCareAbout, newAttributesObj, cb) { cb(); },
+    findOrCreate: function (collection, arrayOfAttributeNamesWeCareAbout, newAttributesObj, cb) { cb(); },
     */
-
 
     /*
     **********************************************
@@ -304,7 +319,7 @@ var Adapter = function Adapter() {
     //
     // > NOTE:  There are a few gotchas here you should be aware of.
     //
-    //    + The collectionName argument is always prepended as the first argument.
+    //    + The collection argument is always prepended as the first argument.
     //      This is so you can know which model is requesting the adapter.
     //
     //    + All adapter functions are asynchronous, even the completely custom ones,
@@ -313,7 +328,7 @@ var Adapter = function Adapter() {
     //      For core CRUD methods, Waterline will add support for .done()/promise usage.
     //
     //    + The function signature for all CUSTOM adapter methods below must be:
-    //      `function (collectionName, options, cb) { ... }`
+    //      `function (collection, options, cb) { ... }`
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -323,10 +338,10 @@ var Adapter = function Adapter() {
     //
     // e.g.:
     //
-    foo: function (collectionName, options, cb) {
+    foo: function (collection, options, cb) {
       return cb(null,"ok");
     },
-    bar: function (collectionName, options, cb) {
+    bar: function (collection, options, cb) {
       if (!options.jello) return cb("Failure!");
       else return cb();
     }

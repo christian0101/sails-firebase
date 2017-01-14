@@ -1,35 +1,38 @@
 /**
- * Test runner dependencies
+ * MIT License
+ *
+ * Copyright (c) 2017 Mike McNeil, Balderdash Design Co., & The Sails Company
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
-var util = require('util');
-var mocha = require('mocha');
-var log = new (require('captains-log'))();
 
 
-var TestRunner = require('waterline-adapter-tests');
 var Adapter = require('../../');
+var TestRunner = require('waterline-adapter-tests');
+var util = require('util');
 
-
-
-// Grab targeted interfaces from this adapter's `package.json` file:
+var log = new (require('captains-log'))();
 var package = {};
 var interfaces = [];
-try {
-    package = require('root-require')('package.json');
-    interfaces = package['sailsAdapter'].implements;
-}
-catch (e) {
-    throw new Error(
-    '\n'+
-    'Could not read supported interfaces from "sails-adapter"."interfaces"'+'\n' +
-    'in this adapter\'s `package.json` file ::' + '\n' +
-    util.inspect(e)
-    );
-}
 
-
-
-
+package = require('root-require')('package.json');
+interfaces = package['sailsAdapter'].implements;
 
 log.info('Testing `' + package.name + '`, a Sails adapter.');
 log.info('Running `waterline-adapter-tests` against ' + interfaces.length + ' interfaces...');
@@ -38,9 +41,6 @@ console.log();
 log('Latest draft of Waterline adapter interface spec:');
 log('https://github.com/balderdashy/sails-docs/blob/master/adapter-specification.md');
 console.log();
-
-
-
 
 /**
  * Integration Test Runner
@@ -51,33 +51,33 @@ console.log();
  */
 new TestRunner({
 
-    // Load the adapter module.
-    adapter: Adapter,
+  // Load the adapter module.
+  adapter: Adapter,
 
-    // Default adapter config to use.
-    config: {
-        schema: false
-    },
+  // Default adapter config to use.
+  config: {
+    schema: false
+  },
 
-    // The set of adapter interfaces to test against.
-    // (grabbed these from this adapter's package.json file above)
-    interfaces: interfaces
-    
-    // Most databases implement 'semantic' and 'queryable'.
-    // 
-    // As of Sails/Waterline v0.10, the 'associations' interface
-    // is also available.  If you don't implement 'associations',
-    // it will be polyfilled for you by Waterline core.  The core
-    // implementation will always be used for cross-adapter / cross-connection
-    // joins.
-    // 
-    // In future versions of Sails/Waterline, 'queryable' may be also
-    // be polyfilled by core.
-    // 
-    // These polyfilled implementations can usually be further optimized at the
-    // adapter level, since most databases provide optimizations for internal
-    // operations.
-    // 
-    // Full interface reference:
-    // https://github.com/balderdashy/sails-docs/blob/master/adapter-specification.md
+  // The set of adapter interfaces to test against.
+  // (grabbed these from this adapter's package.json file above)
+  interfaces: interfaces
+
+  // Most databases implement 'semantic' and 'queryable'.
+  //
+  // As of Sails/Waterline v0.10, the 'associations' interface
+  // is also available.  If you don't implement 'associations',
+  // it will be polyfilled for you by Waterline core.  The core
+  // implementation will always be used for cross-adapter / cross-connection
+  // joins.
+  //
+  // In future versions of Sails/Waterline, 'queryable' may be also
+  // be polyfilled by core.
+  //
+  // These polyfilled implementations can usually be further optimized at the
+  // adapter level, since most databases provide optimizations for internal
+  // operations.
+  //
+  // Full interface reference:
+  // https://github.com/balderdashy/sails-docs/blob/master/adapter-specification.md
 });
