@@ -37,4 +37,5 @@ describe('registerCollection', function () {
   // it('should create a mysql connection pool', function () {})
   // it('should create an HTTP connection pool', function () {})
   // ... and so on.
+
 });

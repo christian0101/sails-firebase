@@ -23,8 +23,14 @@
  */
 
 
+var _ = require('lodash');
+var async = require('async');
+var WaterlineErrors = require('waterline-errors').adapter;
+
+// var myDbDriver = require('nodejs-driver-for-some-awesome-db');
+
 /**
- * Sails Boilerplate Adapter
+ * @YOUR_USERNAME/sails-YOUR_ADAPTER
  *
  * Most of the methods below are optional.
  *
@@ -32,355 +38,392 @@
  * what you have time for.  The other methods will only fail if
  * you try to call them!
  *
- * For many adapters, this file is all you need.  For very complex adapters, you may need more flexiblity.
- * In any case, it's probably a good idea to start with one file and refactor only if necessary.
- * If you do go that route, it's conventional in Node to create a `./lib` directory for your private submodules
- * and load them at the top of the file with other dependencies.  e.g. var update = `require('./lib/update')`;
+ * For many adapters, this file is all you need.  For very complex adapters,
+ * you may need more flexiblity. In any case, it's probably a good idea to start
+ * with one file and refactor only if necessary. If you do go that route, it's
+ * conventional in Node to create a `./lib` directory for your private
+ * submodules and load them at the top of the file with other dependencies.
+ * e.g. var update = `require('./lib/update')`;
  */
 var Adapter = function Adapter() {
 
-  // You may also want to store additional, private data
-  // per-collection (esp. if your data store uses persistent
-  // connections).
+  // Private var to track of all the datastores that use this adapter. In order
+  // for your adapter to support advanced features like transactions and native
+  // queries, you'll need to expose this var publicly as well.
   //
-  // Keep in mind that models can be configured to use different databases
-  // within the same app, at the same time.
-  //
-  // i.e. if you're writing a MariaDB adapter, you should be aware that one
-  // model might be configured as `host="localhost"` and another might be using
-  // `host="foo.com"` at the same time.  Same thing goes for user, database,
-  // password, or any other config.
-  //
-  // You don't have to support this feature right off the bat in your
-  // adapter, but it ought to get done eventually.
-  //
-  // Sounds annoying to deal with...
-  // ...but it's not bad.  In each method, acquire a connection using the config
-  // for the current model (looking it up from `_modelReferences`), establish
-  // a connection, then tear it down before calling your method's callback.
-  // Finally, as an optimization, you might use a db pool for each distinct
-  // connection configuration, partioning pools for each separate configuration
-  // for your adapter (i.e. worst case scenario is a pool for each model, best case
-  // scenario is one single single pool.)  For many databases, any change to
-  // host OR database OR user OR password = separate pool.
-  var _dbPools = {};
+  // See the `registerDatastore` method for more info.
+  var datastores = {};
 
-  // You'll want to maintain a reference to each collection
-  // (aka model) that gets registered with this adapter.
-  var _modelReferences = {};
-
+  // The main adapter object.
   var adapter = {
 
-    // Default configuration for collections
-    // (same effect as if these properties were included at the top level of the model definitions)
-    defaults: {
+    // The identity of this adapter, to be referenced by datastore
+    // configurations in a Sails application.
+    identity: 'sails-YOUR_ADAPTER',
 
-      // For example:
+    // Default configuration for connections
+    defaults: {
+      // For example, MySQLAdapter might set its default port and host.
       // port: 3306,
       // host: 'localhost',
       // schema: true,
       // ssl: false,
       // customThings: ['eh']
+    },
 
-      // If setting syncable, you should consider the migrate option,
-      // which allows you to set how the sync will be performed.
-      // It can be overridden globally in an app (config/adapters.js)
-      // and on a per-model basis.
+    // This allows outside access to the datastores, for use in advanced ORM
+    // methods like `.runTransaction()`.
+    datastores: datastores,
+
+    /**
+     * Find out the average of the query.
+     *
+     * @param {String}     datastore The datastore name to perform the query.
+     * @param {Dictionary} query     The stage-3 query to perform.
+     * @param {Function}   cb        Callback
+     */
+    avg: function avg(datastore, query, cb) {
+      if (!datastores[datastore]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      // When implementing this method, this is where you'll
+      // perform the query and return the result, e.g.:
       //
-      // IMPORTANT:
-      // `migrate` is not a production data migration solution!
-      // In production, always use `migrate: safe`
+      // datastores[datastore].dbConnection.find(query, function(err, result) {
+      //   if (err) {
+      //     return cb(err);
+      //   }
       //
-      // drop   => Drop schema and data, then recreate it
-      // alter  => Drop/add columns as necessary.
-      // safe   => Don't change anything (good for production DBs)
-      migrate: 'alter'
-    },
-
-    // Set to true if this adapter supports (or requires) things like data types, validations, keys, etc.
-    // If true, the schema for models using this adapter will be automatically synced when the server starts.
-    // Not terribly relevant if your data store is not SQL/schemaful.
-    syncable: false,
-
-    /**
-     *
-     * REQUIRED method if users expect to call Model.create() or any methods
-     *
-     * @param  {String}   collection [description]
-     * @param  {[type]}   values     [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
-     */
-    create: function(collection, values, cb) {
-      // If you need to access your private data for this collection:
-      var records = _modelReferences[collection];
-
-      // Create a single new model (specified by `values`)
-
-      // Respond with error or the newly-created record.
-      cb(null, values);
-    },
-
-    // Optional override of built-in batch create logic for increased efficiency
-    // (since most databases include optimizations for pooled queries, at least intra-connection)
-    // otherwise, Waterline core uses create()
-    createEach: function createEach(collection, arrayOfObjects, cb) {
-      cb();
-    },
-
-    /**
-     * REQUIRED method if users expect to call Model.find(), Model.findOne(),
-     * or related.
-     *
-     * You should implement this method to respond with an array of instances.
-     * Waterline core will take care of supporting all the other different
-     * find methods/usages.
-     *
-     * @param  {String}   collection [description]
-     * @param  {[type]}   options    [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
-     */
-    find: function(collection, options, cb) {
-
-      // If you need to access your private data for this collection:
-      var records = _modelReferences[collection];
-
-      // Options object is normalized for you:
+      //   var sum = _.reduce(result, function(memo, row) {
+      //     return memo + row[query.numericAttrName];
+      //   }, 0);
       //
-      // options.where
-      // options.limit
-      // options.skip
-      // options.sort
+      //   var avg = sum / result.length;
+      //   return cb(undefined, avg);
+      // });
 
-      // Filter, paginate, and sort records from the datastore.
-      // You should end up w/ an array of objects as a result.
-      // If no matches were found, this will be an empty array.
-
-      // Respond with an error, or the results.
-      cb(null, []);
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: avg'));
     },
 
     /**
-     * REQUIRED method if integrating with a schemaful
-     * (SQL-ish) database.
+     * Count the number of records matching the query criteria
      *
-     * @param  {String}   collection [description]
-     * @param  {[type]}   definition [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
-     */
-    define: function(collection, definition, cb) {
-      // If you need to access your private data for this collection:
-      var records = _modelReferences[collection];
-
-      // Define a new "table" or "collection" schema in the data store
-      cb();
-    },
-
-    /**
-     * REQUIRED method if integrating with a schemaful
-     * (SQL-ish) database.
+     * @param  {String}    connection  Connection name of datastore query on.
+     * @param  {String}    collection  Collection name to query on.
+     * @param  {Object}    query       Query operation to be performed.
+     * @param  {Function}  cb          Query result callback
      *
-     * @param  {String}   collection [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
+     * @see [Waterline Query Language]{http://sailsjs.com/documentation/concepts/models-and-orm/query-language}
      */
-    describe: function(collection, cb) {
-      // If you need to access your private data for this collection:
-      var records = _modelReferences[collection];
+    count: function count(connection, collection, query, cb) {
+      if (!datastores[datastore]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
 
-      // Respond with the schema (attributes) for a collection or table in the data store
-      var attributes = {};
-      cb(null, attributes);
-    },
-
-    /**
-     * REQUIRED method if users expect to call Model.destroy()
-     *
-     * @param  {String}   collection [description]
-     * @param  {[type]}   options    [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
-     */
-    destroy: function(collection, options, cb) {
-      // If you need to access your private data for this collection:
-      var records = _modelReferences[collection];
-
-      // 1. Filter, paginate, and sort records from the datastore.
-      //    You should end up w/ an array of objects as a result.
-      //    If no matches were found, this will be an empty array.
+      // When implementing this method, this is where you'll
+      // perform the query and return the result, e.g.:
       //
-      // 2. Destroy all result records.
+      // datastores[datastore].dbConnection.count(query, function(err, result) {
+      //     return err ? cb(err) : cb(result);
+      //   });
+
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: count'));
+    },
+
+    /**
+     * Create a record on the datastore
+     *
+     * @param  {String}    connection  Connection name of datastore query on.
+     * @param  {String}    collection  Collection name to query on.
+     * @param  {Object}    record      Array of records
+     * @param  {Function}  cb          Query result callback
+     */
+    create: function create(connection, collection, record, cb) {
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      // When implementing this method, this is where you'll
+      // perform the query and return the result, e.g.:
       //
-      // (do both in a single query if you can-- it's faster)
-
-      // Return an error, otherwise it's declared a success.
-      cb();
-    },
-
-    /**
-     *
-     *
-     * REQUIRED method if integrating with a schemaful
-     * (SQL-ish) database.
-     *
-     * @param  {String}   collection [description]
-     * @param  {[type]}   relations  [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
-     */
-    drop: function(collection, relations, cb) {
-      // If you need to access your private data for this collection:
-      var records = _modelReferences[collection];
-
-      // Drop a "table" or "collection" schema from the data store
-      cb();
-    },
-
-    /**
-     * This method runs when a model is initially registered
-     * at server-start-time.  This is the only required method.
-     *
-     * @param  {String}   collection [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
-     */
-    registerCollection: function(collection, cb) {
-      // Keep a reference to this collection
-      _modelReferences[collection.identity] = collection;
-
-      cb();
-    },
-
-    /**
-     * Fired when a model is unregistered, typically when the server
-     * is killed. Useful for tearing-down remaining open connections,
-     * etc.
-     *
-     * @param  {Function} cb [description]
-     * @return {[type]}      [description]
-     */
-    teardown: function(cb) {
-      cb();
-    },
-
-    /**
-     * REQUIRED method if users expect to call Model.update()
-     *
-     * @param  {String}   collection [description]
-     * @param  {[type]}   options    [description]
-     * @param  {[type]}   values     [description]
-     * @param  {Function} cb         [description]
-     * @return {[type]}              [description]
-     */
-    update: function(collection, options, values, cb) {
-      // If you need to access your private data for this collection:
-      var records = _modelReferences[collection];
-
-      // 1. Filter, paginate, and sort records from the datastore.
-      //    You should end up w/ an array of objects as a result.
-      //    If no matches were found, this will be an empty array.
+      // datastores[connection].dbConnection
+      //   .create(query, function(err, result) {
+      //     return err ? cb(err) : cb(undefined, result);
+      // });
       //
-      // 2. Update all result records with `values`.
+      // Note that depending on the value of `query.meta.fetch`,
+      // you may be expected to return the array of documents
+      // that were created as the second argument to the callback.
+
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: create'));
+    },
+
+    /**
+     * Create a sequence of records on the datastore
+     *
+     * @param  {String}    connection  Connection name of datastore query on.
+     * @param  {String}    collection  Collection name to query on.
+     * @param  {Object}    records     Array of records
+     * @param  {Function}  cb          Query result callback
+     */
+    createEach: function createEach(connection, collection, records, cb) {
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      // When implementing this method, this is where you'll
+      // perform the query and return the result, e.g.:
       //
-      // (do both in a single query if you can-- it's faster)
+      // datastores[connection].dbConnection
+      //   .createEach(query, function(err, result) {
+      //     return err ? cb(err): cb(undefined, result);
+      //   });
+      //
+      // Note that depending on the value of `query.meta.fetch`,
+      // you may be expected to return the array of documents
+      // that were created as the second argument to the callback.
 
-      // Respond with error or an array of updated records.
-      cb(null, []);
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: createEach'));
     },
 
-    // OVERRIDES NOT CURRENTLY FULLY SUPPORTED FOR:
-    //
-    // alter: function (collection, changes, cb) {},
-    // addAttribute: function(collection, attrName, attrDef, cb) {},
-    // removeAttribute: function(collection, attrName, attrDef, cb) {},
-    // alterAttribute: function(collection, attrName, attrDef, cb) {},
-    // addIndex: function(indexName, options, cb) {},
-    // removeIndex: function(indexName, options, cb) {},
+    /**
+     * Define a collection on datastore
+     *
+     * @param {String}   connection  The datastore name define a model on
+     * @param {String}   collection  The collection name to be define
+     * @param {Object}   definition  A Waterline ORM model definition
+     * @param {Function} cb          Define result callback
+     *
+     * @see [Waterline ORM]{http://sailsjs.com/documentation/concepts/models-and-orm/models}
+     */
+    define: function define(connection, collection, definition, cb) {
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
 
-    /*
-    **********************************************
-    * Optional overrides
-    **********************************************
+      // When implementing this method, this is where you'll
+      // create the table, e.g.:
+      //
+      // datastores[datastore].dbConnection
+      //   .createTable(table, definition, function(err) {
+      //     return err ? cb(err) : cb();
+      //   });
 
-    // Optional override of built-in findOrCreate logic for increased efficiency
-    // (since most databases include optimizations for pooled queries, at least intra-connection)
-    // otherwise, uses find() and create()
-    findOrCreate: function (collection, arrayOfAttributeNamesWeCareAbout, newAttributesObj, cb) { cb(); },
-    */
-
-    /*
-    **********************************************
-    * Custom methods
-    **********************************************
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // > NOTE:  There are a few gotchas here you should be aware of.
-    //
-    //    + The collection argument is always prepended as the first argument.
-    //      This is so you can know which model is requesting the adapter.
-    //
-    //    + All adapter functions are asynchronous, even the completely custom ones,
-    //      and they must always include a callback as the final argument.
-    //      The first argument of callbacks is always an error object.
-    //      For core CRUD methods, Waterline will add support for .done()/promise usage.
-    //
-    //    + The function signature for all CUSTOM adapter methods below must be:
-    //      `function (collection, options, cb) { ... }`
-    //
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    // Custom methods defined here will be available on all models
-    // which are hooked up to this adapter:
-    //
-    // e.g.:
-    //
-    foo: function (collection, options, cb) {
-      return cb(null,"ok");
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: define'));
     },
-    bar: function (collection, options, cb) {
-      if (!options.jello) return cb("Failure!");
-      else return cb();
+
+    /**
+     * Destroy a sequence of records matching the query criteria
+     *
+     * @param  {String}    connection  The datastore name to query on.
+     * @param  {String}    collection  The name of the table to remove.
+     * @param  {Object}    query       Query operation to be performed
+     * @param  {Function}  cb          Destroy result callback
+     */
+    destroy: function destroy(connection, collection, query, cb) {
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      // When implementing this method, this is where you'll
+      // perform the query and return the result, e.g.:
+      //
+      // datastores[datastore].dbConnection
+      //   .destroy(query, function(err, result) {
+      //     return err ? return cb(err) : cb(undefined, result);
+      //   });
+      //
+      // Note that depending on the value of `query.meta.fetch`,
+      // you may be expected to return the array of documents
+      // that were destroyed as the second argument to the callback.
+
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: destroy'));
+    },
+
+    /**
+     * Drop an entire collection, including relations and definitions
+     *
+     * @param  {String}    connection  Connection name of datastore query on.
+     * @param  {String}    collection  Collection name to query on.
+     * @param  {Object}    relations   (not used)
+     * @param  {Function}  cb          Drop callback result
+     */
+    drop: function drop(connection, collection, relations, cb) {
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      // When implementing this method, this is where you'll
+      // drop the table, e.g.:
+      //
+      // datastores[connection].dbConnection
+      //   .dropTable(collection, function(err) {
+      //     return err ? cb(err) : cb();
+      //   });
+
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: drop'));
+    },
+
+    /**
+     * Find a sequence of records matching the query criteria
+     *
+     * @param  {String}    connection  Connection name of datastore query on.
+     * @param  {String}    collection  Collection name to query on.
+     * @param  {Object}    query       Query operation to be performed.
+     * @param  {Function}  cb          Query result callback
+     *
+     * @see [Waterline Query Language]{http://sailsjs.com/documentation/concepts/models-and-orm/query-language}
+     */
+    find: function find(connection, collection, query, cb) {
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      // When implementing this method, this is where you'll
+      // perform the query and return the result, e.g.:
+      //
+      // datastores[connection].dbConnection.find(query, function(err, result) {
+      //   if (err) {return cb(err);}
+      //   return cb(undefined, result);
+      // });
+
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: find'));
+    },
+
+    /**
+     * Find a single record matching the query criteria
+     *
+     * @param  {String}    connection  Connection name of datastore query on.
+     * @param  {String}    collection  Collection name to query on.
+     * @param  {Object}    query       Query operation to be performed.
+     * @param  {Function}  cb          Find result callback
+     */
+    findOne: function findOne(connection, collection, query, cb) {
+      return cb(new Error('Not implemented: findOne'));
+    },
+
+    /**
+     * Register a new connection with this adapter. This often involves
+     * creating a new connection to the underlying database layer (e.g. MySQL,
+     * Mongo, or a local file).
+     *
+     * Waterline calls this method once for every datastore that is configured
+     * to use this adapter. This method is optional but strongly recommended.
+     *
+     * @param  {Object}    config  Configuration options for this datastore.
+     * @param  {Object}    models  Model schemas using this datastore.
+     * @param  {Function}  cb      Register connection result callback
+     *
+     * @see [Waterline ORM](http://sailsjs.com/documentation/concepts/models-and-orm/models)
+     */
+    registerConnection: function registerConnection(config, models, cb) {
+      if (!config.identity) {
+        return cb(new Error(WaterlineErrors.IdentityMissing));
+      }
+
+      if (datastores[config.identity]) {
+        return cb(new Error(WaterlineErrors.IdentityDuplicate));
+      }
+
+      // Do any custom connection logic here.
+      // var dbConnectionInstance = myDbDriver.connect(config.url);
+      //
+      // Then save information about the datastore to the `datastores` dictionary.
+      // The values in this dictionary are completely up to the adapter, but there
+      // are a couple of reserved keys:
+      //
+      // `manager`: If provided, this should be a "connection manager" -- an object
+      //            that the underlying driver can use to create new database connections.
+      //            For example, in sails-postgresql, `manager` encapsulates a connection pool
+      //            that the machinepack-postgresql driver uses.  The actual form of the manager
+      //            object is completely dependent on the driver.
+      //
+      // `driver` : A reference to the underlying driver, for instance `machinepack-postgresql`
+      //            for the `sails-postgresql` adapter.
+      //
+      // `config  : Configuration options for the datastore. Typically this will be derived
+      //            (or copied directly) from the `datastoreConfig` argument to this method.
+      datastores[identity] = {
+        config: config,
+        // dbConnection: dbConnectionInstance
+      };
+
+      // Wait one tick and return.
+      setImmediate(function done() {
+        return cb(new Error('Not implemented: registerConnection'));
+      });
+    },
+
+    /**
+     * Fired when a connection is unregistered, typically when the server is
+     * killed. Useful for tearing down remaining open connections, etc.
+     *
+     * @param  {String}    connection  (optional) The connection to tear down. If not
+     *                                 provided, all connection will be torn down.
+     * @param  {Function}  cb          Tear down result callback
+     */
+    teardown: function teardown(connection, cb) {
+      return cb(new Error('Not implemented: teardown'));
+
+      // If no specific identity was sent, teardown all the datastores
+      if (!identity || identity === null) {
+        datastoreIdentities = datastoreIdentities.concat(_.keys(datastores));
+      } else {
+        datastoreIdentities.push(identity);
+      }
+
+      // Teardown each datastore, and call the callback when finished.
+      async.eachSeries();
+      async.eachSeries(datastoreIdentities, function teardownDatastore(datastoreIdentity, next) {
+        delete datastores[datastoreIdentity];
+        return next();
+      }, function doneTearingDown(err) {
+        return err ? cb(err) : cb();
+      });
+    },
+
+    /**
+     * Update one or more models in the table
+     *
+     * @param  {String}    connection  Connection name of datastore query on.
+     * @param  {String}    collection  Collection name to query on.
+     * @param  {Object}    query       Query operation to be performed.
+     * @param  {Object}    values      Values to be send to datastore.
+     * @param  {Function}  cb          Query result callback
+     *
+     * @see [Waterline Query Language]{http://sailsjs.com/documentation/concepts/models-and-orm/query-language}
+     */
+    update: function update(connection, collection, query, values, cb) {
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      // When implementing this method, this is where you'll
+      // perform the query and return the result, e.g.:
+      //
+      // datastores[connection].dbConnection.update(query, function(err, result) {
+      //   return cb(err) : return cb(undefined, result);
+      // });
+      //
+      // Note that depending on the value of `query.meta.fetch`,
+      // you may be expected to return the array of documents
+      // that were updated as the second argument to the callback.
+
+      // But for now, this method is just a no-op.
+      return cb(new Error('Not implemented: update'));
     }
-
-    // So if you have three models:
-    // Tiger, Sparrow, and User
-    // 2 of which (Tiger and Sparrow) implement this custom adapter,
-    // then you'll be able to access:
-    //
-    // Tiger.foo(...)
-    // Tiger.bar(...)
-    // Sparrow.foo(...)
-    // Sparrow.bar(...)
-
-
-    // Example success usage:
-    //
-    // (notice how the first argument goes away:)
-    Tiger.foo({}, function (err, result) {
-      if (err) return console.error(err);
-      else console.log(result);
-
-      // outputs: ok
-    });
-
-    // Example error usage:
-    //
-    // (notice how the first argument goes away:)
-    Sparrow.bar({test: 'yes'}, function (err, result){
-      if (err) console.error(err);
-      else console.log(result);
-
-      // outputs: Failure!
-    })
-    */
 
   };
 
-  // Expose adapter definition
   return adapter;
 
 };
