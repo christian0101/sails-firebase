@@ -25,10 +25,10 @@
   "readmeFilename": "README.md",
   "dependencies": {},
   "devDependencies": {
-    "waterline-adapter-tests": "git://github.com/balderdashy/waterline-adapter-tests.git#associations",
+    "captains-log": "~0.10.6",
     "mocha": "*",
     "root-require": "~0.2.0",
-    "captains-log": "~0.10.6"
+    "waterline-adapter-tests": "git://github.com/balderdashy/waterline-adapter-tests.git#associations"
   },
   "sailsAdapter": {
     "sailsVersion": "~0.10.0",
