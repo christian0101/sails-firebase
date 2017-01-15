@@ -417,6 +417,78 @@ var Adapter = function Adapter() {
 
       // But for now, this method is just a no-op.
       return cb(new Error('Not implemented: update'));
+    },
+
+    /**
+     * Serialize a Waterline record into a Firebase document
+     *
+     * @param   {Object}  record      One waterline model record
+     * @param   {Object}  definition  Waterline model definition of record
+     * @return  {Object}              Firebase document serialized from record
+     *
+     * @see  [Waterline ORM](http://sailsjs.com/documentation/concepts/models-and-orm/models)
+     */
+    _serialize: function _serialize(record, definition) {
+      if (_.isEmpty(record)) {
+        return record;
+      }
+
+      var document = _.cloneDeep(record);
+
+      if (record.id) {
+        document._id = record.id;
+        delete document.id;
+      }
+
+      Object.keys(definition).forEach(function (key) {
+        if (document[key] && (definition[key].type === 'datetime')) {
+          return document[key] = document[key].toISOString();
+        }
+
+        if (document[key] && (definition[key].type === 'date')) {
+          return document[key] = new Date(document[key].toISOString());
+        }
+      });
+
+      return document;
+    },
+
+    /**
+     * Deserialize a Firebase document into a Waterline record
+     *
+     * @param   {Object}  document    One Firebase document
+     * @param   {Object}  definition  Waterline model definition of record
+     * @param   {Object}  methods     Custom methods of model definition
+     * @return  {Object}              Waterline model record deserialized from document
+     *
+     * @see  [Waterline ORM](http://sailsjs.com/documentation/concepts/models-and-orm/models)
+     */
+    _deserialize: function _deserialize(document, definition, methods) {
+      if (_.isEmpty(document)) {
+        return document;
+      }
+
+      document.id = document._id;
+      delete document._id;
+
+      document.createdAt = new Date(document.createdAt);
+      document.updatedAt = new Date(document.updatedAt);
+
+      Object.keys(definition).forEach(function (key) {
+        if (document[key] && (key !== 'createdAt') && (key !== 'updatedAt') && (definition[key].type === 'datetime')) {
+          return document[key] = new Date(document[key]);
+        }
+
+        if (document[key] && (key !== 'createdAt') && (key !== 'updatedAt') && (definition[key].type === 'date')) {
+          return document[key] = new Date(document[key]);
+        }
+
+        if (document[key] && (definition[key].type === 'array')) {
+          return document[key] = _.values(document[key]);
+        }
+      });
+
+      return _.assignIn(_.cloneDeep(methods), document);
     }
 
   };
