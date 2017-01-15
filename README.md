@@ -1,72 +1,143 @@
-![image_squidhome@2x.png](http://i.imgur.com/RIvu9.png) 
+[![](https://camo.githubusercontent.com/9e49073459ed4e0e2687b80eaf515d87b0da4a6b/687474703a2f2f62616c64657264617368792e6769746875622e696f2f7361696c732f696d616765732f6c6f676f2e706e67)](http://sailsjs.com)
 
-# sails-adapter-boilerplate
+# sails-firebase
 
-This template exists to make it easier for you to get started writing an adapter for Sails.js.
+[Sails.js](http://sailsjs.com/)/[Waterline](http://waterlinejs.org/) adapter for [Google Firebase 3](https://firebase.google.com/).
 
-> ### Generator now available
->
-> `$ sails generate adapter foo`
->
-> (see https://github.com/balderdashy/sails-generate-adapter for the source.)
+[![npm version](https://badge.fury.io/js/sails-firebase.svg)](https://badge.fury.io/js/sails-firebase)
 
+Warning
+-------
+**This adapter is still under active development and in no manner is advised using it in a production environment.**
 
+**Check the project [issues board](https://github.com/jpventura/sails-firebase/issues) for announcements, bug reports, upcoming features and discussions.**
 
+Only mandatory *semantic* interface methods were implemented. The next steps is bringing *queryable* and *associations* to life *asap*.
 
-> ### WARNING
->
-> This version of the adapter is for the upcoming v0.10 release of Sails / Waterline.
-> Check out the 0.8 branch for the original stuff.
+Introduction
+------------
 
+#### Overview
+The Firebase Realtime Database synchronized in realtime to every connected client.
 
+It allows you build cross-platform apps with our iOS and Android, all of your clients share one Realtime Database instance and automatically receive updates with the newest data.
 
-## Getting started
-It's usually pretty easy to add your own adapters for integrating with proprietary systems or existing open APIs.  For most things, it's as easy as `require('some-module')` and mapping the appropriate methods to match waterline semantics.  To get started:
+However the current Firebase architecture force the developers to implement a lof of business logic as part of the mobile applications, leading to some side-effects:
 
-1. Fork this repository
-2. Set up your `README.md` and `package.json` file.  Sails.js adapter module names are of the form sails-*, where * is the name of the datastore or service you're integrating with.
-3. Build your adapter.
+   - Business logic code duplication among Android, iOS, Windows and all mobile platforms
+   - Due version fragmentation, business logic is affected by apps being (not) updated.
 
-## How to test your adapter
+#### Sails.js and Waterline as Mobile Orchestrator
+This Waterline Firebase Adapter provides missing piece to Sails.js become a mobile orchestrator. The server application read and writes directly into Firebase, which updates all mobile devices connected to it in realtime; just like a [message passing distributed system](https://en.wikipedia.org/wiki/Message_passing).
+
+Configure and Install
+---------------------
+#### Dependencies
+At your Sails.js project, install the adapter library:
+
+    $ npm install sails-firebase --save
+
+#### Configure
+
+Create an application at [Firebase admin console](https://console.firebase.google.com), then access the project settings menu:
+
+    https://console.firebase.google.com/project/<YOUR PROJECT NAME>/settings/general/
+
+Go to the _account services_ menu and create download a server private key, then download the produced JSON file:
+
+```JavaScript
+{
+    credential: {
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "client_email": "<YOUR EMAIL CLIENT>",
+        "client_id": "<YOUR CLIENT ID>",
+        "client_x509_cert_url": "<YOUR CLIENT X509 CERTIFICATE>",
+        "private_key": "<YOUR PRIVATE KEY>",
+        "private_key_id": "<YOUR PRIVATE KEY ID>",
+        "project_id": "<YOUR PROJECT ID>",
+        "token_uri": "https://accounts.google.com/o/oauth2/token",
+        "type": "service_account",
+    },
+
+    databaseURL: "https://<YOUR PROJECT NAME>.firebaseio.com"
+}
+```
+
+After installing this adapter as a dependency of your Sails app, make this particular Firebase database your default datastore by adding the following settings to the files in your config folder:
+
+```JavaScript
+// ./config/connections.js
+module.exports.connections = {
+
+  firebase: {
+    adapter: 'sails-firebase',
+
+    credential: {
+      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "client_email": "<YOUR EMAIL CLIENT>",
+      "client_id": "<YOUR CLIENT ID>",
+      "client_x509_cert_url": "<YOUR CLIENT X509 CERTIFICATE>",
+      "private_key": "<YOUR PRIVATE KEY>",
+      "private_key_id": "<YOUR PRIVATE KEY ID>",
+      "project_id": "<YOUR PROJECT ID>",
+      "token_uri": "https://accounts.google.com/o/oauth2/token",
+      "type": "service_account",
+    },
+
+    databaseURL: "https://<YOUR PROJECT NAME>.firebaseio.com",
+  }
+
+};
+```
+
+```JavaScript
+// ./config/models.js
+module.exports.models = {
+   'connection': 'firebase'
+};
+```
+
+Check [Sails documentation](http://sailsjs.com/documentation/reference/configuration/sails-config-connections) for more information about how to configure connections.
+
+  - Be polite :-)
+  - Observe the guideline and conventions laid out in [Sails contribution guide](http://sailsjs.com/documentation/contributing).
+  - Read [Udacity Git Commit Style Guide](https://udacity.github.io/git-styleguide/)
+  - Use [Commit using message emmojis](https://github.com/dannyfritz/commit-message-emoji) and a modification indicator
+
+Contributing
+------------
+If you wish to contribute to [`Waterline Firebase Adapter`](https://github.com/jpventura/sails-firebase), first we would like to thank you for dedicating your time on this project.
+
+Before create a pull request, keep some things in mind:
+
+  - Be polite with other community developers.
+  - Run the integration tests locally and be sure they pass.
+  - Keep the code style. 
+  - Create awesome commit messages (use [emmojis](https://github.com/dannyfritz/commit-message-emoji) and read [Udacity Git Style Guide](https://udacity.github.io/git-styleguide/))
+
+#### Before PR
 
 Configure the interfaces you plan to support (and targeted version of Sails/Waterline) in the adapter's `package.json` file:
 
-```javascript
+```JavaScript
+
 {
-  //...
-  "sailsAdapter": {
-    "sailsVersion": "~0.10.0",
-    "implements": [
-      "semantic",
-      "queryable",
-      "associations"
-    ]
+  "waterlineAdapter": {
+    "type": "sails-firebase",
+    "interfaces": [
+      "semantic"
+    ],
+    "waterlineVersion": "~0.12.1"
   }
 }
 ```
 
 In your adapter's directory, run:
 
-```sh
-$ npm test
-```
 
-
-## Publish your adapter
-
-> You're welcome to write proprietary adapters and use them any way you wish--
-> these instructions are for releasing an open-source adapter.
-
-1. Create a [new public repo](https://github.com/new) and add it as a remote (`git remote add origin git@github.com:yourusername/sails-youradaptername.git)
-2. Make sure you attribute yourself as the author and set the license in the package.json to "MIT".
-3. Run the tests one last time.
-4. Do a [pull request to sails-docs](https://github.com/balderdashy/sails-docs/compare/) adding your repo to `data/adapters.js`.  Please let us know about any special instructions for usage/testing. 
-5. We'll update the documentation with information about your new adapter
-6. Then everyone will adore you with lavish praises.  Mike might even send you jelly beans.
-
-7. Run `npm version patch`
-8. Run `git push && git push --tags`
-9. Run `npm publish`
+    $ npm test
 
 ## About Sails.js and Waterline
 http://sailsjs.org
