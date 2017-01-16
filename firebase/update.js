@@ -23,26 +23,35 @@
  */
 
 
-var Create = require('./create');
-var CreateEach = require('./createEach');
-var Define = require('./define');
-var Destroy = require('./destroy');
-var Drop = require('./drop');
-var Find = require('./find');
-var FindOne = require('./findOne');
-var RegisterApplication = require('./registerApplication');
-var TearDown = require('./tearDown');
-var Update = require('./update');
+var _ = require('lodash');
+var createEach = require('./createEach');
+var find = require('./find');
 
-module.exports = {
-  'create': Create,
-  'createEach': CreateEach,
-  'define': Define,
-  'destroy': Destroy,
-  'drop': Drop,
-  'find': Find,
-  'findOne': FindOne,
-  'registerApplication': RegisterApplication,
-  'tearDown': TearDown,
-  'update': Update
+/**
+ * Fired when a model is unregistered, typically when the server
+ * is killed. Useful for tearing down remaining open applications,
+ * etc.
+ *
+ * @param  {String}  application (optional) The datastore to tear down. If not
+ * @param  {String}  collection  (optional) The datastore to tear down. If not
+ * @param  {Object}  query       (optional) The datastore to tear down. If not
+ * @param  {Object}  values      (optional) The datastore to tear down. If not
+ * @return {Promise}             [description]
+ */
+var Update = function Update(application, collection, query, values) {
+  var updateOne = function updateOne(document) {
+    _.forIn(values, function (value, key) {
+      document[key] = value;
+    });
+
+    return document;
+  };
+
+  var updateEach = function updateEach(documents) {
+    return createEach(application, collection, _.map(documents, updateOne));
+  };
+
+  return find(application, collection, query).then(updateEach);
 };
+
+module.exports = Update;
