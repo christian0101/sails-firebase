@@ -4,6 +4,7 @@
 
 [Sails.js](http://sailsjs.com/)/[Waterline](http://waterlinejs.org/) adapter for [Google Firebase 3](https://firebase.google.com/).
 
+[![Build Status](https://travis-ci.org/jpventura/sails-firebase.svg?branch=master)](https://travis-ci.org/jpventura/sails-firebase)
 [![npm version](https://badge.fury.io/js/sails-firebase.svg)](https://badge.fury.io/js/sails-firebase)
 
 Warning
@@ -117,12 +118,9 @@ Before create a pull request, keep some things in mind:
   - Keep the code style. 
   - Create awesome commit messages (use [emmojis](https://github.com/dannyfritz/commit-message-emoji) and read [Udacity Git Style Guide](https://udacity.github.io/git-styleguide/))
 
-#### Before PR
-
-Configure the interfaces you plan to support (and targeted version of Sails/Waterline) in the adapter's `package.json` file:
+The adapter currently provides only [semantic](https://github.com/balderdashy/sails-docs/blob/master/contributing/adapter-specification.md) inteface. If you are submitting other interfaces, add it to the [`package.json`](https://github.com/jpventura/sails-firebase/blob/firebase/package.json) file:
 
 ```JavaScript
-
 {
   "waterlineAdapter": {
     "type": "sails-firebase",
@@ -134,13 +132,4 @@ Configure the interfaces you plan to support (and targeted version of Sails/Wate
 }
 ```
 
-In your adapter's directory, run:
-
-
-    $ npm test
-
-## About Sails.js and Waterline
-http://sailsjs.org
-
-Waterline is a new kind of storage and retrieval engine for Sails.js.  It provides a uniform API for accessing stuff from different kinds of databases, protocols, and 3rd party APIs.  That means you write the same code to get users, whether they live in mySQL, LDAP, MongoDB, or Facebook.
 
