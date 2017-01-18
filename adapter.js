@@ -24,10 +24,8 @@
 
 
 var _ = require('lodash');
-var async = require('async');
+var firebase = require('./firebase');
 var WaterlineErrors = require('waterline-errors').adapter;
-
-// var myDbDriver = require('nodejs-driver-for-some-awesome-db');
 
 /**
  * @jpventura/sails-firebase
@@ -42,7 +40,7 @@ var WaterlineErrors = require('waterline-errors').adapter;
  * @see [Firebase Admin]{https://firebase.google.com/docs/admin/setup}
  * @see [Waterline Query Language]{http://sailsjs.com/documentation/concepts/models-and-orm/query-language}
  */
-var Adapter = function Adapter() {
+var WaterlineFirebaseAdapter = function WaterlineFirebaseAdapter() {
 
   // Private var to track of all the datastores that use this adapter. In order
   // for your adapter to support advanced features like transactions and native
@@ -50,6 +48,11 @@ var Adapter = function Adapter() {
   //
   // See the `registerDatastore` method for more info.
   var datastores = {};
+
+  var definitions = {};
+
+  // FIXME: WL should automatically copy the model methods after queries
+  var methods = {};
 
   // The main adapter object.
   var adapter = {
@@ -72,37 +75,27 @@ var Adapter = function Adapter() {
     // methods like `.runTransaction()`.
     datastores: datastores,
 
-    /**
-     * Find out the average of the query.
-     *
-     * @param {String}     datastore The datastore name to perform the query.
-     * @param {Dictionary} query     The stage-3 query to perform.
-     * @param {Function}   cb        Callback
-     */
-    avg: function avg(datastore, query, cb) {
-      if (!datastores[datastore]) {
-        return cb(new Error(WaterlineErrors.InvalidConnection), null);
-      }
+    // Default Firebase primary key must be string
+    pkFormat: 'string',
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastores[datastore].dbConnection.find(query, function(err, result) {
-      //   if (err) {
-      //     return cb(err);
-      //   }
-      //
-      //   var sum = _.reduce(result, function(memo, row) {
-      //     return memo + row[query.numericAttrName];
-      //   }, 0);
-      //
-      //   var avg = sum / result.length;
-      //   return cb(undefined, avg);
-      // });
-
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: avg'));
-    },
+    // Do any custom connection logic here.
+    // var dbConnectionInstance = myDbDriver.connect(config.url);
+    //
+    // Then save information about the datastore to the `datastores` dictionary.
+    // The values in this dictionary are completely up to the adapter, but there
+    // are a couple of reserved keys:
+    //
+    // `manager`: If provided, this should be a "connection manager" -- an object
+    //            that the underlying driver can use to create new database connections.
+    //            For example, in sails-postgresql, `manager` encapsulates a connection pool
+    //            that the machinepack-postgresql driver uses.  The actual form of the manager
+    //            object is completely dependent on the driver.
+    //
+    // `driver` : A reference to the underlying driver, for instance `machinepack-postgresql`
+    //            for the `sails-postgresql` adapter.
+    //
+    // `config  : Configuration options for the datastore. Typically this will be derived
+    //            (or copied directly) from the `datastoreConfig` argument to this method.
 
     /**
      * Count the number of records matching the query criteria
@@ -115,19 +108,17 @@ var Adapter = function Adapter() {
      * @see [Waterline Query Language]{http://sailsjs.com/documentation/concepts/models-and-orm/query-language}
      */
     count: function count(connection, collection, query, cb) {
-      if (!datastores[datastore]) {
+      if (!datastores[connection]) {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastores[datastore].dbConnection.count(query, function(err, result) {
-      //     return err ? cb(err) : cb(result);
-      //   });
+      var onCount = function onCount(number) {
+        return number;
+      };
 
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: count'));
+      return firebase.count(connection, collection, query)
+        .then(onCount)
+        .catch(cb);
     },
 
     /**
@@ -139,24 +130,26 @@ var Adapter = function Adapter() {
      * @param  {Function}  cb          Query result callback
      */
     create: function create(connection, collection, record, cb) {
+      var self = this;
+
+      if (_.isArray(record)) {
+        return self.createEach(connection, collection, record, cb);
+      }
+
       if (!datastores[connection]) {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastores[connection].dbConnection
-      //   .create(query, function(err, result) {
-      //     return err ? cb(err) : cb(undefined, result);
-      // });
-      //
-      // Note that depending on the value of `query.meta.fetch`,
-      // you may be expected to return the array of documents
-      // that were created as the second argument to the callback.
+      var onCreate = function onCreate(document) {
+        var definition = definitions[connection][collection];
+        return cb(null, self._deserialize(document, definition));
+      };
 
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: create'));
+      var document = self._serialize(record, definitions[connection][collection]);
+
+      return firebase.create(connection, collection, document)
+        .then(onCreate)
+        .catch(cb);
     },
 
     /**
@@ -168,24 +161,30 @@ var Adapter = function Adapter() {
      * @param  {Function}  cb          Query result callback
      */
     createEach: function createEach(connection, collection, records, cb) {
+      var self = this;
+
       if (!datastores[connection]) {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastores[connection].dbConnection
-      //   .createEach(query, function(err, result) {
-      //     return err ? cb(err): cb(undefined, result);
-      //   });
-      //
-      // Note that depending on the value of `query.meta.fetch`,
-      // you may be expected to return the array of documents
-      // that were created as the second argument to the callback.
+      var serialize = function serialize(record) {
+        return self._serialize(record, definitions[connection][collection]);
+      };
 
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: createEach'));
+      var deserialize = function deserialize(value) {
+        var definition = definitions[connection][collection];
+        return self._deserialize(value, definition);
+      };
+
+      var onCreate = function(documents) {
+        return cb(null, _.map(documents, deserialize));
+      };
+
+      var documents = _.map(records, serialize);
+
+      return firebase.createEach(connection, collection, documents)
+        .then(onCreate)
+        .catch(cb);
     },
 
     /**
@@ -203,16 +202,12 @@ var Adapter = function Adapter() {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // create the table, e.g.:
-      //
-      // datastores[datastore].dbConnection
-      //   .createTable(table, definition, function(err) {
-      //     return err ? cb(err) : cb();
-      //   });
+      var onDefine = function onDefine() {
+        definitions[connection][collection] = definition;
+        return cb(null, null);
+      };
 
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: define'));
+      return firebase.define(connection, collection, definition).then(onDefine).catch(cb);
     },
 
     /**
@@ -228,20 +223,13 @@ var Adapter = function Adapter() {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastores[datastore].dbConnection
-      //   .destroy(query, function(err, result) {
-      //     return err ? return cb(err) : cb(undefined, result);
-      //   });
-      //
-      // Note that depending on the value of `query.meta.fetch`,
-      // you may be expected to return the array of documents
-      // that were destroyed as the second argument to the callback.
+      var onDestroy = function(report) {
+        return cb(null, report);
+      };
 
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: destroy'));
+      return firebase.destroy(connection, collection, query)
+        .then(onDestroy)
+        .catch(cb);
     },
 
     /**
@@ -257,16 +245,7 @@ var Adapter = function Adapter() {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // drop the table, e.g.:
-      //
-      // datastores[connection].dbConnection
-      //   .dropTable(collection, function(err) {
-      //     return err ? cb(err) : cb();
-      //   });
-
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: drop'));
+      return firebase.drop(connection, collection, relations).then(cb).catch(cb);
     },
 
     /**
@@ -280,20 +259,24 @@ var Adapter = function Adapter() {
      * @see [Waterline Query Language]{http://sailsjs.com/documentation/concepts/models-and-orm/query-language}
      */
     find: function find(connection, collection, query, cb) {
+      var self = this;
+
       if (!datastores[connection]) {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastores[connection].dbConnection.find(query, function(err, result) {
-      //   if (err) {return cb(err);}
-      //   return cb(undefined, result);
-      // });
+      var deserialize = function deserialize(document) {
+        var definition = definitions[connection][collection];
+        return self._deserialize(document, definition, methods[connection][collection]);
+      };
 
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: find'));
+      var onFind = function onFind(documents) {
+        return cb(null, _.map(documents, deserialize));
+      };
+
+      return firebase.find(connection, collection, query)
+        .then(onFind)
+        .catch(cb);
     },
 
     /**
@@ -305,7 +288,20 @@ var Adapter = function Adapter() {
      * @param  {Function}  cb          Find result callback
      */
     findOne: function findOne(connection, collection, query, cb) {
-      return cb(new Error('Not implemented: findOne'));
+      var self = this;
+
+      if (!datastores[connection]) {
+        return cb(new Error(WaterlineErrors.InvalidConnection), null);
+      }
+
+      var onFindOne = function onFindOne(document) {
+        var definition = definitions[connection][collection];
+        return cb(null, self._deserialize(document, definition, methods[connection][collection]));
+      };
+
+      return firebase.findOne(connection, collection, query)
+        .then(onFindOne)
+        .catch(cb);
     },
 
     /**
@@ -331,33 +327,23 @@ var Adapter = function Adapter() {
         return cb(new Error(WaterlineErrors.IdentityDuplicate));
       }
 
-      // Do any custom connection logic here.
-      // var dbConnectionInstance = myDbDriver.connect(config.url);
-      //
-      // Then save information about the datastore to the `datastores` dictionary.
-      // The values in this dictionary are completely up to the adapter, but there
-      // are a couple of reserved keys:
-      //
-      // `manager`: If provided, this should be a "connection manager" -- an object
-      //            that the underlying driver can use to create new database connections.
-      //            For example, in sails-postgresql, `manager` encapsulates a connection pool
-      //            that the machinepack-postgresql driver uses.  The actual form of the manager
-      //            object is completely dependent on the driver.
-      //
-      // `driver` : A reference to the underlying driver, for instance `machinepack-postgresql`
-      //            for the `sails-postgresql` adapter.
-      //
-      // `config  : Configuration options for the datastore. Typically this will be derived
-      //            (or copied directly) from the `datastoreConfig` argument to this method.
-      datastores[identity] = {
-        config: config,
-        // dbConnection: dbConnectionInstance
+      // FIXME: WATERLINE QUERY SHOULD NOT NEED THIS
+      methods[config.identity] = _.mapValues(models, '_instanceMethods');
+
+      definitions[config.identity] = _.extendWith({}, _.mapValues(models, 'definition'));
+
+      var onRegisterConnection = function(database) {
+        datastores[config.identity] = {
+          config: config,
+          dbConnection: database
+        };
+
+        return cb(null, null);
       };
 
-      // Wait one tick and return.
-      setImmediate(function done() {
-        return cb(new Error('Not implemented: registerConnection'));
-      });
+      return firebase.registerApplication(config, models)
+        .then(onRegisterConnection)
+        .catch(cb);
     },
 
     /**
@@ -369,23 +355,7 @@ var Adapter = function Adapter() {
      * @param  {Function}  cb          Tear down result callback
      */
     teardown: function teardown(connection, cb) {
-      return cb(new Error('Not implemented: teardown'));
-
-      // If no specific identity was sent, teardown all the datastores
-      if (!identity || identity === null) {
-        datastoreIdentities = datastoreIdentities.concat(_.keys(datastores));
-      } else {
-        datastoreIdentities.push(identity);
-      }
-
-      // Teardown each datastore, and call the callback when finished.
-      async.eachSeries();
-      async.eachSeries(datastoreIdentities, function teardownDatastore(datastoreIdentity, next) {
-        delete datastores[datastoreIdentity];
-        return next();
-      }, function doneTearingDown(err) {
-        return err ? cb(err) : cb();
-      });
+      return firebase.tearDown(connection).then(cb).catch(cb);
     },
 
     /**
@@ -400,23 +370,96 @@ var Adapter = function Adapter() {
      * @see [Waterline Query Language]{http://sailsjs.com/documentation/concepts/models-and-orm/query-language}
      */
     update: function update(connection, collection, query, values, cb) {
+      var self = this;
+
       if (!datastores[connection]) {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastores[connection].dbConnection.update(query, function(err, result) {
-      //   return cb(err) : return cb(undefined, result);
-      // });
-      //
-      // Note that depending on the value of `query.meta.fetch`,
-      // you may be expected to return the array of documents
-      // that were updated as the second argument to the callback.
+      var deserialize = function deserialize(value) {
+        var definition = definitions[connection][collection];
+        return self._deserialize(value, definition);
+      };
 
-      // But for now, this method is just a no-op.
-      return cb(new Error('Not implemented: update'));
+      var onUpdate = function onUpdate(documents) {
+        return cb(null, _.map(documents, deserialize));
+      };
+
+      return firebase.update(connection, collection, query, values)
+        .then(onUpdate)
+        .catch(cb);
+    },
+
+    /**
+     * Serialize a Waterline record into a Firebase document
+     *
+     * @param   {Object}  record      One waterline model record
+     * @param   {Object}  definition  Waterline model definition of record
+     * @return  {Object}              Firebase document serialized from record
+     *
+     * @see  [Waterline ORM](http://sailsjs.com/documentation/concepts/models-and-orm/models)
+     */
+    _serialize: function _serialize(record, definition) {
+      if (_.isEmpty(record)) {
+        return record;
+      }
+
+      var document = _.cloneDeep(record);
+
+      if (record.id) {
+        document._id = record.id;
+        delete document.id;
+      }
+
+      Object.keys(definition).forEach(function (key) {
+        if (document[key] && (definition[key].type === 'datetime')) {
+          return document[key] = document[key].toISOString();
+        }
+
+        if (document[key] && (definition[key].type === 'date')) {
+          return document[key] = new Date(document[key].toISOString());
+        }
+      });
+
+      return document;
+    },
+
+    /**
+     * Deserialize a Firebase document into a Waterline record
+     *
+     * @param   {Object}  document    One Firebase document
+     * @param   {Object}  definition  Waterline model definition of record
+     * @param   {Object}  methods     Custom methods of model definition
+     * @return  {Object}              Waterline model record deserialized from document
+     *
+     * @see  [Waterline ORM](http://sailsjs.com/documentation/concepts/models-and-orm/models)
+     */
+    _deserialize: function _deserialize(document, definition, methods) {
+      if (_.isEmpty(document)) {
+        return document;
+      }
+
+      document.id = document._id;
+      delete document._id;
+
+      document.createdAt = new Date(document.createdAt);
+      document.updatedAt = new Date(document.updatedAt);
+
+      Object.keys(definition).forEach(function (key) {
+        if (document[key] && (key !== 'createdAt') && (key !== 'updatedAt') && (definition[key].type === 'datetime')) {
+          return document[key] = new Date(document[key]);
+        }
+
+        if (document[key] && (key !== 'createdAt') && (key !== 'updatedAt') && (definition[key].type === 'date')) {
+          return document[key] = new Date(document[key]);
+        }
+
+        if (document[key] && (definition[key].type === 'array')) {
+          return document[key] = _.values(document[key]);
+        }
+      });
+
+      return _.assignIn(_.cloneDeep(methods), document);
     }
 
   };
@@ -425,4 +468,4 @@ var Adapter = function Adapter() {
 
 };
 
-module.exports = Adapter;
+module.exports = WaterlineFirebaseAdapter;
