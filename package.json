@@ -1,6 +1,6 @@
 {
   "name": "sails-YOUR_ADAPTER",
-  "version": "0.10.0",
+  "version": "0.0.0",
   "description": "YOUR_ADAPTER_DATASRC adapter for Sails / Waterline",
   "main": "index.js",
   "scripts": {
@@ -23,19 +23,23 @@
   "author": "YOUR NAME <YOUR@EMAIL>",
   "license": "MIT",
   "readmeFilename": "README.md",
-  "dependencies": {},
-  "devDependencies": {
-    "waterline-adapter-tests": "git://github.com/balderdashy/waterline-adapter-tests.git#associations",
-    "mocha": "*",
-    "root-require": "~0.2.0",
-    "captains-log": "~0.10.6"
+  "dependencies": {
+    "async": "2.1.4",
+    "lodash": "4.17.4",
+    "waterline-errors": "0.10.1"
   },
-  "sailsAdapter": {
-    "sailsVersion": "~0.10.0",
-    "implements": [
+  "devDependencies": {
+    "captains-log": "~1.0.2",
+    "mocha": "3.2.0",
+    "waterline-adapter-tests": "~0.12.1"
+  },
+  "waterlineAdapter": {
+    "type": "sails-firebase",
+    "interfaces": [
       "semantic",
       "queryable",
       "associations"
-    ]
+    ],
+    "waterlineVersion": "~0.12.1"
   }
 }

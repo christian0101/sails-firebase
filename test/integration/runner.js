@@ -1,83 +1,98 @@
 /**
- * Test runner dependencies
+ * MIT License
+ *
+ * Copyright (c) 2017 Mike McNeil, Balderdash Design Co., & The Sails Company
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
-var util = require('util');
-var mocha = require('mocha');
+
+
+var Adapter = require('../../');
+var package = require('../../package');
+var TestRunner = require('waterline-adapter-tests');
+
+var interfaces = package.waterlineAdapter.interfaces;
 var log = new (require('captains-log'))();
 
-
-var TestRunner = require('waterline-adapter-tests');
-var Adapter = require('../../');
-
-
-
-// Grab targeted interfaces from this adapter's `package.json` file:
-var package = {};
-var interfaces = [];
-try {
-    package = require('root-require')('package.json');
-    interfaces = package['sailsAdapter'].implements;
-}
-catch (e) {
-    throw new Error(
-    '\n'+
-    'Could not read supported interfaces from "sails-adapter"."interfaces"'+'\n' +
-    'in this adapter\'s `package.json` file ::' + '\n' +
-    util.inspect(e)
-    );
-}
-
-
-
-
-
-log.info('Testing `' + package.name + '`, a Sails adapter.');
-log.info('Running `waterline-adapter-tests` against ' + interfaces.length + ' interfaces...');
-log.info('( ' + interfaces.join(', ') + ' )');
-console.log();
-log('Latest draft of Waterline adapter interface spec:');
-log('https://github.com/balderdashy/sails-docs/blob/master/adapter-specification.md');
-console.log();
-
-
-
-
 /**
- * Integration Test Runner
+ * Most databases implement 'semantic' and 'queryable'.
  *
- * Uses the `waterline-adapter-tests` module to
- * run mocha tests against the specified interfaces
- * of the currently-implemented Waterline adapter API.
+ * As of Waterline v0.12, the 'associations' interface is also available.  If
+ * you don't implement 'associations', it will be polyfilled for you by
+ * Waterline core.  The core implementation will always be used for
+ * cross-adapter / cross-connection joins.
+ *
+ * In future versions of Sails/Waterline, 'queryable' may be also
+ * be polyfilled by core.
+ *
+ * These polyfilled implementations can usually be further optimized at the
+ * adapter level, since most databases provide optimizations for internal
+ * operations.
+ *
+ * @see [Waterline Adapter Specification]{@link https://github.com/balderdashy/sails-docs/blob/master/adapter-specification.md]
  */
-new TestRunner({
+var test = {
 
-    // Load the adapter module.
-    adapter: Adapter,
+  /**
+   * Print Waterline Adapter name and list which interfaces will be tested
+   */
+  beforeAll: function beforeAll() {
+    var count = 1;
 
-    // Default adapter config to use.
-    config: {
+    log.info('Testing `' + package.name + '`, a Waterline adapter.');
+    log.info('Running `waterline-adapter-tests` against interfaces:');
+    interfaces.forEach(function(interface) {
+      log.info(count++ + '.', interface);
+    });
+    console.log();
+  },
+
+  /**
+   * Run Integration Test Runner
+   *
+   * Uses the `waterline-adapter-tests` module to run mocha tests against the
+   * specified interfaces of the currently-implemented Waterline adapter API.
+   *
+   * @see [Waterline Adapter Specification]{@link https://github.com/balderdashy/sails-docs/blob/master/adapter-specification.md]
+   */
+  main: function main() {
+    this.beforeAll();
+
+    var runner = new TestRunner({
+
+      // Load the adapter module.
+      adapter: Adapter,
+
+      // Default adapter config to use.
+      config: {
         schema: false
-    },
+      },
 
-    // The set of adapter interfaces to test against.
-    // (grabbed these from this adapter's package.json file above)
-    interfaces: interfaces
-    
-    // Most databases implement 'semantic' and 'queryable'.
-    // 
-    // As of Sails/Waterline v0.10, the 'associations' interface
-    // is also available.  If you don't implement 'associations',
-    // it will be polyfilled for you by Waterline core.  The core
-    // implementation will always be used for cross-adapter / cross-connection
-    // joins.
-    // 
-    // In future versions of Sails/Waterline, 'queryable' may be also
-    // be polyfilled by core.
-    // 
-    // These polyfilled implementations can usually be further optimized at the
-    // adapter level, since most databases provide optimizations for internal
-    // operations.
-    // 
-    // Full interface reference:
-    // https://github.com/balderdashy/sails-docs/blob/master/adapter-specification.md
-});
+      // The set of adapter interfaces to test against.
+      // (grabbed these from this adapter's package.json file above)
+      interfaces: interfaces
+
+    });
+
+    return runner;
+  }
+
+};
+
+test.main();
