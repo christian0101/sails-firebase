@@ -24,6 +24,7 @@
 
 
 var Create = require('./create');
+var CreateEach = require('./createEach');
 var Define = require('./define');
 var Drop = require('./drop');
 var RegisterApplication = require('./registerApplication');
@@ -31,6 +32,7 @@ var TearDown = require('./tearDown');
 
 module.exports = {
   'create': Create,
+  'createEach': CreateEach,
   'define': Define,
   'drop': Drop,
   'registerApplication': RegisterApplication,
