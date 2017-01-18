@@ -23,28 +23,24 @@
  */
 
 
-var Count = require('./count');
-var Create = require('./create');
-var CreateEach = require('./createEach');
-var Define = require('./define');
-var Destroy = require('./destroy');
-var Drop = require('./drop');
-var Find = require('./find');
-var FindOne = require('./findOne');
-var RegisterApplication = require('./registerApplication');
-var TearDown = require('./tearDown');
-var Update = require('./update');
+var _ = require('lodash');
+var admin = require('firebase-admin');
+var find = require('./find');
+var Promise = require('bluebird');
 
-module.exports = {
-  'count': Count,
-  'create': Create,
-  'createEach': CreateEach,
-  'define': Define,
-  'destroy': Destroy,
-  'drop': Drop,
-  'find': Find,
-  'findOne': FindOne,
-  'registerApplication': RegisterApplication,
-  'tearDown': TearDown,
-  'update': Update
+/**
+ * Add a new row to the table
+ *
+ * @param {String}  connection The datastore name to query on.
+ * @param {String}  collection The table name to create a record into
+ * @param {Object}  definition The new record to be created
+ * @param {Promise}            Unresolved promise if the created record,
+ *                             otherwise an error throw during the operation
+ */
+var Count = function Count(connection, collection, query, cb) {
+  return find(connection, collection, query).then(function (documents) {
+    return documents.length;
+  });
 };
+
+module.exports = Count;
