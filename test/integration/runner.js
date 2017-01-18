@@ -30,6 +30,39 @@ var TestRunner = require('waterline-adapter-tests');
 var interfaces = package.waterlineAdapter.interfaces;
 var log = new (require('captains-log'))();
 
+var firebase = {
+
+  autoPk: false,
+
+  identity: 'default',
+
+  credential: {
+    "auth_provider_x509_cert_url": process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+
+    "auth_uri": process.env.FIREBASE_AUTH_URI,
+
+    "client_email": process.env.FIREBASE_CLIENT_EMAIL,
+
+    "client_id": process.env.FIREBASE_CLIENT_ID,
+
+    "client_x509_cert_url": process.env.FIREBASE_CLIENT_X509_CERT_URL,
+
+    "private_key": process.env.FIREBASE_PRIVATE_KEY,
+
+    "private_key_id": process.env.FIREBASE_PRIVATE_KEY_IDPROJECT_ID,
+
+    "project_id": process.env.FIREBASE_PROJECT_ID,
+
+    "token_uri": process.env.FIREBASE_TOKEN_URI,
+
+    "type": process.env.FIREBASE_TYPE,
+  },
+
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
+
+  schema: false
+};
+
 /**
  * Most databases implement 'semantic' and 'queryable'.
  *
@@ -80,13 +113,15 @@ var test = {
       adapter: Adapter,
 
       // Default adapter config to use.
-      config: {
-        schema: false
-      },
+      config: firebase,
 
       // The set of adapter interfaces to test against.
       // (grabbed these from this adapter's package.json file above)
-      interfaces: interfaces
+      interfaces: interfaces,
+
+      mocha: {
+        timeout: 7000
+      }
 
     });
 

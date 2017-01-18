@@ -1,14 +1,14 @@
 {
-  "name": "sails-YOUR_ADAPTER",
-  "version": "0.0.0",
-  "description": "YOUR_ADAPTER_DATASRC adapter for Sails / Waterline",
+  "name": "sails-firebase",
+  "version": "0.0.1",
+  "description": "Sails.js/Waterline adapter for Google Firebase 3",
   "main": "index.js",
   "scripts": {
     "test": "node test/integration/runner -R spec -b"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER.git"
+    "url": "https://github.com/jpventura/sails-firebase.git"
   },
   "keywords": [
     "A_KEYWORD_SPECIFIC_TO_YOUR_ADAPTER",
@@ -20,7 +20,7 @@
     "sailsjs",
     "sails.js"
   ],
-  "author": "YOUR NAME <YOUR@EMAIL>",
+  "author": "JP Ventura <contact@jpventura.com>",
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
@@ -36,9 +36,7 @@
   "waterlineAdapter": {
     "type": "sails-firebase",
     "interfaces": [
-      "semantic",
-      "queryable",
-      "associations"
+      "semantic"
     ],
     "waterlineVersion": "~0.12.1"
   }
