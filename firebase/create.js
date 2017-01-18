@@ -22,17 +22,39 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+var admin = require('firebase-admin');
+var Promise = require('bluebird');
 
-var Create = require('./create');
-var Define = require('./define');
-var Drop = require('./drop');
-var RegisterApplication = require('./registerApplication');
-var TearDown = require('./tearDown');
+/**
+ * Add a new row to the table
+ *
+ * @param {String}  connection The datastore name to query on.
+ * @param {String}  collection The table name to create a record into
+ * @param {Object}  document   The new record to be created
+ * @param {Promise}            Unresolved promise if the created record,
+ *                             otherwise an error throw during the operation
+ */
+var Create = function Create(connection, collection, document) {
+  try {
+    var database = admin.app(connection).database();
+    var reference = database.ref('documents').child(collection);
 
-module.exports = {
-  'create': Create,
-  'define': Define,
-  'drop': Drop,
-  'registerApplication': RegisterApplication,
-  'tearDown': TearDown
+    document._id = document._id || reference.push().key;
+
+    if (!document.createdAt) {
+      document.createdAt = document.updatedAt = new Date().toISOString();
+    } else {
+      document.updatedAt = new Date().toISOString();
+    }
+
+    var onCreate = function() {
+      return document;
+    };
+
+    return reference.child(document._id).set(document).then(onCreate);
+  } catch (error) {
+    return Promise.reject(error);
+  }
 };
+
+module.exports = Create;
