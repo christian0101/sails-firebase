@@ -23,24 +23,29 @@
  */
 
 
-var Create = require('./create');
-var CreateEach = require('./createEach');
-var Define = require('./define');
-var Destroy = require('./destroy');
-var Drop = require('./drop');
-var Find = require('./find');
-var FindOne = require('./findOne');
-var RegisterApplication = require('./registerApplication');
-var TearDown = require('./tearDown');
+var _ = require('lodash');
+var find = require('./find');
 
-module.exports = {
-  'create': Create,
-  'createEach': CreateEach,
-  'define': Define,
-  'destroy': Destroy,
-  'drop': Drop,
-  'find': Find,
-  'findOne': FindOne,
-  'registerApplication': RegisterApplication,
-  'tearDown': TearDown
+/**
+ * Add a new row to the table
+ *
+ * @param {String}  connection The datastore name to query on.
+ * @param {String}  collection The table name to create a record into
+ * @param {Object}  query      The new record to be created
+ * @param {Promise}            Unresolved promise if the created record,
+ *                             otherwise an error throw during the operation
+ */
+var FindOne = function FindOne(connection, collection, query) {
+  var head = function head(documents) {
+    return (documents.length > 0) ? _.head(documents) : null;
+  };
+
+  // FIXME: Optimize Firebase query
+  // This approach is querying ALL documents at Firebase and then filtering
+  // then through Waterline criteria.
+  // This solution is GOOD ENOUGH in order to pass on Waterline Adapter tests,
+  // but should not be used on production environment.
+  return find(connection, collection, query).then(head);
 };
+
+module.exports = FindOne;
