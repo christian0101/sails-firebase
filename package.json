@@ -1,6 +1,6 @@
 {
   "name": "sails-firebase",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Sails.js/Waterline adapter for Google Firebase 3",
   "main": "index.js",
   "scripts": {
