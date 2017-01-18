@@ -22,10 +22,32 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-var Define = require('./define');
-var RegisterApplication = require('./registerApplication');
 
-module.exports = {
-  'define': Define,
-  'registerApplication': RegisterApplication
+var admin = require('firebase-admin');
+var Promise = require('bluebird');
+
+/**
+ * Add a new row to the table
+ *
+ * @param {String}  connection The datastore name to query on.
+ * @param {String}  collection The table name to create a record into
+ * @param {Object}  definition The new record to be created
+ * @param {Promise}            Unresolved promise if the created record,
+ *                             otherwise an error throw during the operation
+ */
+var Define = function Define(connection, collection, definition) {
+  try {
+    var database = admin.app(connection).database();
+    var reference = database.ref('definitions').child(collection);
+
+    var onDefine = function onDefine() {
+      return null;
+    };
+
+    return reference.set(definition).then(onDefine);
+  } catch (error) {
+    return Promise.reject(error);
+  }
 };
+
+module.exports = Define;
