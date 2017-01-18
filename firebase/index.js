@@ -28,6 +28,7 @@ var CreateEach = require('./createEach');
 var Define = require('./define');
 var Destroy = require('./destroy');
 var Drop = require('./drop');
+var Find = require('./find');
 var RegisterApplication = require('./registerApplication');
 var TearDown = require('./tearDown');
 
@@ -37,6 +38,7 @@ module.exports = {
   'define': Define,
   'destroy': Destroy,
   'drop': Drop,
+  'find': Find,
   'registerApplication': RegisterApplication,
   'tearDown': TearDown
 };

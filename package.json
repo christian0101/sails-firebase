@@ -28,12 +28,13 @@
     "bluebird": "3.2.1",
     "firebase-admin": "4.0.4",
     "lodash": "4.17.4",
+    "waterline-criteria": "2.0.0",
     "waterline-errors": "0.10.1"
   },
   "devDependencies": {
     "captains-log": "~1.0.2",
     "mocha": "3.2.0",
-    "waterline-adapter-tests": "~0.12.1"
+    "waterline-adapter-tests": "git://github.com/jpventura/waterline-adapter-tests.git#v0.12.3"
   },
   "waterlineAdapter": {
     "type": "sails-firebase",
