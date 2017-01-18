@@ -23,9 +23,11 @@
  */
 
 var Define = require('./define');
+var Drop = require('./drop');
 var RegisterApplication = require('./registerApplication');
 
 module.exports = {
   'define': Define,
+  'drop': Drop,
   'registerApplication': RegisterApplication
 };
