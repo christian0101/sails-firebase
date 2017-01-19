@@ -31,9 +31,6 @@ var interfaces = package.waterlineAdapter.interfaces;
 var log = new (require('captains-log'))();
 
 var firebase = {
-
-  autoPk: false,
-
   identity: 'default',
 
   credential: {

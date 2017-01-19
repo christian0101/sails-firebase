@@ -57,6 +57,9 @@ var WaterlineFirebaseAdapter = function WaterlineFirebaseAdapter() {
   // The main adapter object.
   var adapter = {
 
+    // Automatic define primary key in model.
+    autoPK: true,
+
     // The identity of this adapter, to be referenced by datastore
     // configurations in a Sails application.
     identity: 'sails-firebase',
