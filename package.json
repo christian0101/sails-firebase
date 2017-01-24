@@ -1,7 +1,7 @@
 {
   "name": "sails-firebase",
   "version": "0.1.0",
-  "description": "Sails.js/Waterline adapter for Google Firebase 3",
+  "description": "Sails.js/Waterline adapter for Firebase",
   "main": "index.js",
   "scripts": {
     "test": "node test/integration/runner -R spec -b"
@@ -11,14 +11,10 @@
     "url": "https://github.com/jpventura/sails-firebase.git"
   },
   "keywords": [
-    "A_KEYWORD_SPECIFIC_TO_YOUR_ADAPTER",
-    "ANOTHER_KEYWORD_SPECIFIC_TO_YOUR_ADAPTER",
-    "adapter",
+    "firebase",
     "sails",
     "waterline",
-    "orm",
-    "sailsjs",
-    "sails.js"
+    "orm"
   ],
   "author": "JP Ventura <contact@jpventura.com>",
   "license": "MIT",
