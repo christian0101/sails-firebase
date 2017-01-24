@@ -19,6 +19,16 @@
   "author": "JP Ventura <contact@jpventura.com>",
   "license": "MIT",
   "readmeFilename": "README.md",
+  "contributors": [
+    {
+      "name": "JP Ventura",
+      "email": "contact@jpventura.com"
+    },
+    {
+      "name": "Mike McNeil",
+      "email": "mike@balderdash.co"
+    }
+  ],
   "dependencies": {
     "async": "2.1.4",
     "bluebird": "3.2.1",
