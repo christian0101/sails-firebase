@@ -2,7 +2,7 @@
 
 # sails-firebase
 
-[Sails.js](http://sailsjs.com/)/[Waterline](http://waterlinejs.org/) adapter for [Google Firebase 3](https://firebase.google.com/).
+[Sails.js](http://sailsjs.com/)/[Waterline](http://waterlinejs.org/) adapter for [Firebase](https://firebase.google.com/).
 
 [![Build Status](https://travis-ci.org/jpventura/sails-firebase.svg?branch=master)](https://travis-ci.org/jpventura/sails-firebase)
 [![npm version](https://badge.fury.io/js/sails-firebase.svg)](https://badge.fury.io/js/sails-firebase)
@@ -44,28 +44,9 @@ Create an application at [Firebase admin console](https://console.firebase.googl
 
     https://console.firebase.google.com/project/<YOUR PROJECT NAME>/settings/general/
 
-Go to the _account services_ menu and create download a server private key, then download the produced JSON file:
+Go to the _account services_ menu and create download a server private key, which will contain valid `credential` and `databaseUrl`.
 
-```JavaScript
-{
-    credential: {
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "client_email": "<YOUR EMAIL CLIENT>",
-        "client_id": "<YOUR CLIENT ID>",
-        "client_x509_cert_url": "<YOUR CLIENT X509 CERTIFICATE>",
-        "private_key": "<YOUR PRIVATE KEY>",
-        "private_key_id": "<YOUR PRIVATE KEY ID>",
-        "project_id": "<YOUR PROJECT ID>",
-        "token_uri": "https://accounts.google.com/o/oauth2/token",
-        "type": "service_account",
-    },
-
-    databaseURL: "https://<YOUR PROJECT NAME>.firebaseio.com"
-}
-```
-
-After installing this adapter as a dependency of your Sails app, make this particular Firebase database your default datastore by adding the following settings to the files in your config folder:
+You will add an `adapter` atribute and copy it into `connection.js` configuration file:
 
 ```JavaScript
 // ./config/connections.js
@@ -92,6 +73,7 @@ module.exports.connections = {
 
 };
 ```
+and also configure your model:
 
 ```JavaScript
 // ./config/models.js
@@ -99,13 +81,6 @@ module.exports.models = {
    'connection': 'firebase'
 };
 ```
-
-Check [Sails documentation](http://sailsjs.com/documentation/reference/configuration/sails-config-connections) for more information about how to configure connections.
-
-  - Be polite :-)
-  - Observe the guideline and conventions laid out in [Sails contribution guide](http://sailsjs.com/documentation/contributing).
-  - Read [Udacity Git Commit Style Guide](https://udacity.github.io/git-styleguide/)
-  - Use [Commit using message emmojis](https://github.com/dannyfritz/commit-message-emoji) and a modification indicator
 
 Contributing
 ------------
@@ -116,7 +91,7 @@ Before create a pull request, keep some things in mind:
   - Be polite with other community developers.
   - Run the integration tests locally and be sure they pass.
   - Keep the code style. 
-  - Create awesome commit messages (use [emmojis](https://github.com/dannyfritz/commit-message-emoji) and read [Udacity Git Style Guide](https://udacity.github.io/git-styleguide/))
+  - Create awesome commit messages (use [emojis](https://github.com/dannyfritz/commit-message-emoji) and read [Udacity Git Style Guide](https://udacity.github.io/git-styleguide/))
 
 The adapter currently provides only [semantic](https://github.com/balderdashy/sails-docs/blob/master/contributing/adapter-specification.md) inteface. If you are submitting other interfaces, add it to the [`package.json`](https://github.com/jpventura/sails-firebase/blob/firebase/package.json) file:
 
