@@ -31,8 +31,8 @@
   ],
   "dependencies": {
     "async": "2.1.4",
-    "bluebird": "3.2.1",
-    "firebase-admin": "4.0.4",
+    "bluebird": "3.4.7",
+    "firebase-admin": "4.1.1",
     "lodash": "4.17.4",
     "waterline-criteria": "2.0.0",
     "waterline-errors": "0.10.1"
