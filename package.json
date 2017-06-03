@@ -30,16 +30,16 @@
     }
   ],
   "dependencies": {
-    "async": "2.1.5",
+    "async": "2.4.1",
     "bluebird": "3.5.0",
-    "firebase-admin": "4.2.0",
+    "firebase-admin": "5.0.0",
     "lodash": "4.17.4",
     "waterline-criteria": "2.0.0",
     "waterline-errors": "0.10.1"
   },
   "devDependencies": {
     "captains-log": "~1.0.2",
-    "mocha": "3.2.0",
+    "mocha": "3.4.2",
     "waterline-adapter-tests": "git://github.com/jpventura/waterline-adapter-tests.git#v0.12.3"
   },
   "waterlineAdapter": {
