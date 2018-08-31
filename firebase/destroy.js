@@ -44,7 +44,7 @@ var Destroy = function Destroy(connection, collection, query) {
     var reference = database.ref('documents').child(collection);
 
     var destroyOne = function (document) {
-      return reference.child(document._id).set(null).then(function() {
+      return reference.child(document.id).set(null).then(function() {
         return document;
       });
     };

@@ -264,6 +264,8 @@ var WaterlineFirebaseAdapter = function WaterlineFirebaseAdapter() {
     find: function find(connection, collection, query, cb) {
       var self = this;
 
+      //console.log(collection, query);
+
       if (!datastores[connection]) {
         return cb(new Error(WaterlineErrors.InvalidConnection), null);
       }
@@ -410,7 +412,7 @@ var WaterlineFirebaseAdapter = function WaterlineFirebaseAdapter() {
       var document = _.cloneDeep(record);
 
       if (record.id) {
-        document._id = record.id;
+        document.id = record.id;
         delete document.id;
       }
 
@@ -442,7 +444,7 @@ var WaterlineFirebaseAdapter = function WaterlineFirebaseAdapter() {
         return document;
       }
 
-      document.id = document._id;
+      document.id = document.id;
       delete document._id;
 
       document.createdAt = new Date(document.createdAt);

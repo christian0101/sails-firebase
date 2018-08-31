@@ -42,7 +42,7 @@ var CreateEach = function CreateEach(connection, collection, documents) {
     var reference = database.ref('documents').child(collection);
 
     var createOne = function createOne(document) {
-      document._id = document._id || reference.push().key;
+      document.id = document.id || reference.push().key;
 
       if (!document.createdAt) {
         document.createdAt = document.updatedAt = new Date().toISOString();
@@ -50,7 +50,7 @@ var CreateEach = function CreateEach(connection, collection, documents) {
         document.updatedAt = new Date().toISOString();
       }
 
-      return reference.child(document._id).set(document).then(function() {
+      return reference.child(document.id).set(document).then(function() {
         return document;
       });
     };

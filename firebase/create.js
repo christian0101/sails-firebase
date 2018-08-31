@@ -39,7 +39,7 @@ var Create = function Create(connection, collection, document) {
     var database = admin.app(connection).database();
     var reference = database.ref('documents').child(collection);
 
-    document._id = document._id || reference.push().key;
+    document.id = document.id || reference.push().key;
 
     if (!document.createdAt) {
       document.createdAt = document.updatedAt = new Date().toISOString();
@@ -51,7 +51,7 @@ var Create = function Create(connection, collection, document) {
       return document;
     };
 
-    return reference.child(document._id).set(document).then(onCreate);
+    return reference.child(document.id).set(document).then(onCreate);
   } catch (error) {
     return Promise.reject(error);
   }

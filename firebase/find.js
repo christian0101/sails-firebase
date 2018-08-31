@@ -112,7 +112,7 @@ var onFind = function onFind(snapshot) {
   }
 
   return _.values(_.mapValues(documents, function(document, id) {
-    document._id = id;
+    document.id = id;
     return document;
   }));
 };
@@ -122,15 +122,15 @@ var findEqualTo = function findByAttribute(connection, collection, query) {
     var database = admin.app(connection).database();
     var reference = database.ref('documents').child(collection);
     var attribute = equalTo(query);
-    
+
     if (!isNaN(query.where[attribute])) {
       query.where[attribute] = parseInt(query.where[attribute]);
     }
 
     return reference.orderByChild(attribute)
-      .equalTo(query.where[attribute])
-      .once('value')
-      .then(onFind);
+                    .equalTo(query.where[attribute])
+                    .once('value')
+                    .then(onFind);
   } catch (error) {
     return Promise.reject(error);
   }
@@ -179,7 +179,7 @@ var findById = function findById(connection, collection, query) {
       }
 
       var document = snapshot.val();
-      document._id = snapshot.key;
+      document.id = snapshot.key;
       return [ document ];
     };
 
