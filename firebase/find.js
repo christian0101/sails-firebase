@@ -122,6 +122,10 @@ var findEqualTo = function findByAttribute(connection, collection, query) {
     var database = admin.app(connection).database();
     var reference = database.ref('documents').child(collection);
     var attribute = equalTo(query);
+    
+    if (!isNaN(query.where[attribute])) {
+      query.where[attribute] = parseInt(query.where[attribute]);
+    }
 
     return reference.orderByChild(attribute)
       .equalTo(query.where[attribute])
